@@ -8,6 +8,8 @@ class SignUpBonus():
 class SpendingCatagoryInfo():
     catagory: SpendingCatagory
     rate: float
+    cap: Optional[float] = None
+    quarterly_rotating: bool = False
 
 class Bank():
     relationship_bank: bool
