@@ -2,6 +2,7 @@ CREATE TABLE users (
     id serial PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
     email VARCHAR(255) UNIQUE NOT NULL,
+    authorized_user_info INTEGER REFERENCES authorized_user_info(id),
     credit_score credit_score_rating,
     annual_income INTEGER,
     created_at TIMESTAMP DEFAULT NOW()

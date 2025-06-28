@@ -25,11 +25,36 @@ class UserRepository:
                             VALUES (%s, %s, %s)
                         """, (user.id, spending.category, spending.user_spend))
                     
-                        conn.commit()
-                        return user
+                    conn.commit()
+                    return user
         
     def get_user_by_id(self, user_id: int) -> Optional[User]:
         """Get user with all spending categories"""
+        with psycopg.connect("dbname=rewardInfo") as conn:
+            with conn.cursor() as cur:
+                cur.execute("""
+                SELECT * FROM users WHERE id = %s """, user_id)
+                ...
+                user_row = cur.fetchone()
+                if not user_row:
+                    return None
+                
+                cur.execute("""
+                SELECT category, user_spend 
+                FROM user_spending_category 
+                WHERE user_id = %s
+            """, (user_id,))
+                
+                spending_rows = cur.fetchall()
+
+                user = User(
+                    id = user_row[0],
+                    name = user_row[1],
+                    email = user_row[2],
+                    
+
+                )
+
         
     def update_user(self, user_id: int, user_data: User) -> User:
         """Update user info (income, credit score, etc.)"""
@@ -37,7 +62,7 @@ class UserRepository:
     def delete_user(self, user_id: int) -> bool:
         """Soft delete or hard delete user"""
         
-    def add_spending_category(self, user_id: int, spending: SpendingAmount) -> bool:
+    def add_spending_category(self, user_id: int, spending: int) -> bool:
         """Add or update a spending category"""
         
     def remove_spending_category(self, user_id: int, category: str) -> bool:

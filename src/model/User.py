@@ -4,6 +4,7 @@ from datetime import datetime
 from typing import Optional
 
 class SpendingCatagoryUser():
+    id: int
     user_id: int
     catagory: SpendingCatagory
     user_spend: float
