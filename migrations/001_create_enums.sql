@@ -19,5 +19,6 @@ CREATE TYPE reward_structure AS ENUM (
 CREATE TYPE card_type AS ENUM (
     'student',
     'secured',
-    'business'
+    'business',
+    'general'
 );

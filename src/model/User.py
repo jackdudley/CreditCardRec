@@ -2,15 +2,17 @@ from pydantic import BaseModel, EmailStr
 from enums import SpendingCatagory, CreditScoreRating
 from datetime import datetime
 from typing import Optional
-from card import Bank
 
 class SpendingCatagoryUser():
+    user_id: int
     catagory: SpendingCatagory
     user_spend: float
 
 class AuthoritzedUserInfo():
-    bank: Bank
-    after_age_eighteen: bool
+    id: int
+    user_id: int
+    bank_id: int
+    add_after_age_eighteen: bool
 
 
 class User(BaseModel):
