@@ -14,6 +14,7 @@ class SpendingCatagoryInfo():
 class Bank():
     relationship_bank: bool
     transfer_points_value_cents: float
+    reports_under_eighteen: bool
 
 class Card():
     name: str
