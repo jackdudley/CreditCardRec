@@ -3,7 +3,8 @@ from typing import Optional
 from datetime import datetime
 
 class SignUpBonus():
-    days_to_complete: int
+    deadline_days: int
+    spend_required: int
     value_dollars: float
 
 class SpendingCatagoryInfo():
@@ -13,11 +14,13 @@ class SpendingCatagoryInfo():
     quarterly_rotating: bool = False
 
 class Bank():
+    id: Optional[int]
     relationship_bank: bool
     transfer_points_value_cents: float
     reports_under_eighteen: bool
 
 class Card():
+    id: Optional[int]
     name: str
     bank: Bank
     card_type: CardType

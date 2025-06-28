@@ -28,4 +28,3 @@ class CardType(str, Enum):
     SECURED = "secured"
     BUISNESS = "business"
 
-

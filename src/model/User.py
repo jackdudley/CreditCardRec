@@ -14,9 +14,10 @@ class AuthoritzedUserInfo():
 
 
 class User(BaseModel):
+    id: str
     name: str
     email: EmailStr
-    spending_catagories: list[SpendingCatagoryUser]
+    spending_catagories: SpendingCatagoryUser = []
     authorized_user_info = Optional[AuthoritzedUserInfo] = None
     credit_score: CreditScoreRating
     annual_income: int
