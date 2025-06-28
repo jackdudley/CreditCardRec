@@ -1,8 +1,8 @@
 from pydantic import BaseModel, EmailStr
-from Enums import SpendingCatagory, CreditScoreRating
+from enums import SpendingCatagory, CreditScoreRating
 from datetime import datetime
 from typing import Optional
-from Card import Bank
+from card import Bank
 
 class SpendingCatagoryUser():
     catagory: SpendingCatagory
@@ -18,6 +18,6 @@ class User(BaseModel):
     email: EmailStr
     spending_catagories: list[SpendingCatagoryUser]
     authorized_user_info = Optional[AuthoritzedUserInfo] = None
-    credit_score: list[CreditScoreRating]
+    credit_score: CreditScoreRating
     annual_income: int
     created_at: datetime

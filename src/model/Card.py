@@ -1,5 +1,6 @@
-from Enums import RewardStructure, SpendingCatagory, CardType
+from enums import RewardStructure, SpendingCatagory, CardType
 from typing import Optional
+from datetime import datetime
 
 class SignUpBonus():
     days_to_complete: int
@@ -27,3 +28,4 @@ class Card():
     reward_structure: RewardStructure = []
     fee_credits: Optional[str] = None
     other_benefits: Optional[str] = None
+    created_at: datetime
