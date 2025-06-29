@@ -81,18 +81,88 @@ class UserRepository:
                     created_at= user_row[5]
                 )
 
+                conn.commit()
+
+                return user
+
         
     def update_user(self, user_id: int, user_data: User) -> User:
         """Update user info (income, credit score, etc.)"""
+        with psycopg.connect("dbname=rewardInfo") as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """UPDATE users SET (name=%s, email=%s, credit_score=%s, annual_income=%s )
+                    WHERE user_id=%s""", user_data.name, user_data.email, user_data.credit_score, 
+                    user_data.annual_income, user_id)
+        
+                updated_row = cur.fetchone()
+                if not updated_row:
+                    raise Exception(f"{user_id} not found")
+
+                conn.commit()
+
+                return self.get_user_by_id(user_id)
+
         
     def delete_user(self, user_id: int) -> bool:
         """Soft delete or hard delete user"""
+        with psycopg.connect("dbname=rewardInfo") as conn:
+            with conn.cursor() as cur:
+                cur.execute("""DELETE FROM users where user_id=%s""", user_id)
+
+                deleted_user = cur.rowcount()
+
+                if(deleted_user):
+                    conn.commit()
+                    return True
+                else:
+                    return False
         
-    def add_spending_category(self, user_id: int, spending: int) -> bool:
+    def add_spending_category(self, user_id: int, spending: SpendingCatagoryUser) -> bool:
         """Add or update a spending category"""
-        
-    def remove_spending_category(self, user_id: int, category: str) -> bool:
+        with psycopg.connect("dbname=rewardInfo") as conn:
+            with conn.cursor() as cur:
+                cur.execute("""
+                            INSERT INTO user_spending_category (catagory, user_spend)
+                            VALUES %s, %s WHERE user_id=%s
+                            """, spending.catagory, spending.user_spend, user_id)
+                added_catagory = cur.rowcount()
+                if(added_catagory):
+                    conn.commit()
+                    return True
+                else:
+                    return False
+    def remove_spending_category(self, user_id: int, category: SpendingCatagoryUser) -> bool:
         """Remove a spending category"""
+        with psycopg.connect("dbname=rewardInfo") as conn:
+            with conn.cursor() as cur:
+                cur.execute("""
+                            DELETE FROM user_spending_category (catagory, user_spend)
+                            WHERE user_id=%s AND catagory=%s
+                            """, category, user_id)
+                
+                deleted_catagory = cur.rowcount()
+                if(deleted_catagory):
+                    conn.commit()
+                    return True
+                else:
+                    return False
+
+    def update_authorized_user_info(self, user_id: int, category: str) -> AuthoritzedUserInfo:
+        """Remove a spending category"""
+        # with psycopg.connect("dbname=rewardInfo") as conn:
+        #     with conn.cursor() as cur:
+        #         cur.execute("""
+        #                     UPDATE FROM user_spending_category (catagory, user_spend)
+        #                     WHERE user_id=%s AND catagory=%s
+        #                     """, category, user_id)
+                
+        #         deleted_catagory = cur.rowcount()
+        #         if(deleted_catagory):
+        #             conn.commit()
+        #             return True
+        #         else:
+        #             return False
         
     def get_users_by_credit_score(self, min_score: str) -> List[User]:
         """For analytics - get users by credit score range"""
