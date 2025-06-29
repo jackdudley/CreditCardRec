@@ -1,6 +1,6 @@
 import psycopg
 from typing import Optional, List
-from model.user import User, SpendingCatagoryUser
+from model.user import User, SpendingCatagoryUser, AuthoritzedUserInfo
 
 class UserRepository:
     
@@ -40,19 +40,45 @@ class UserRepository:
                     return None
                 
                 cur.execute("""
-                SELECT category, user_spend 
+                SELECT id, category, user_spend 
                 FROM user_spending_category 
                 WHERE user_id = %s
             """, (user_id,))
                 
                 spending_rows = cur.fetchall()
 
+                # command to get authorized user info if any
+
+                cur.execute("""
+                SELECT id, bank_id, add_after_age_eighteen,
+                FROM authorized_user_info 
+                WHERE user_id = %s
+            """, (user_id,))
+                
+                au_row = cur.fetchall()
+
+                au_info = None
+
+                if au_row:
+                    au_info = AuthoritzedUserInfo (
+                        id = au_row[0],
+                        user_id = user_id,
+                        bank_id = au_row[1],
+                        add_after_age_eighteen = au_row[2]
+                    )
+
+
                 user = User(
                     id = user_row[0],
                     name = user_row[1],
                     email = user_row[2],
-                    
-
+                    spending_catagories = [
+                        SpendingCatagoryUser(id = spending_rows[0], category = spending_rows[1],
+                                             user_spend = spending_rows[2]) for row in spending_rows],
+                    authorized_user_info = au_info if au_info else None,
+                    credit_score= user_row[3],
+                    annual_income= user_row[4],
+                    created_at= user_row[5]
                 )
 
         
