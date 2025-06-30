@@ -14,7 +14,7 @@ def insert_batch(basic_data: list[tuple]):
     VALUES (%s, %s, %s), (name, bank, points, sub)
     """
     
-    with psycopg.connect("dbname=rewardInfo") as conn:
+    with psycopg.connect(self.database_url) as conn:
         with conn.cursor() as db:
 
             db.executemany(query, basic_data)

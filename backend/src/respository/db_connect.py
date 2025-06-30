@@ -1,6 +1,6 @@
 import psycopg
 
-with psycopg.connect("dbname=rewardInfo") as conn:
+with psycopg.connect(self.database_url) as conn:
     with conn.cursor() as db:
 
         query1 = """ CREATE TABLE mainInfo (

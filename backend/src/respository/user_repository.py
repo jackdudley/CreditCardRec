@@ -1,12 +1,19 @@
 import psycopg
 from typing import Optional, List
 from model.user import User, SpendingCategoryUser, AuthorizedUserInfo
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 class UserRepository:
+
+    def __init__(self, database_url=None):
+        self.database_url = database_url or os.getenv("DATABASE_URL")
     
     def create_user(self, user: User) -> User:
         """Create new user and return with ID"""
-        with psycopg.connect("dbname=rewardInfo") as conn:
+        with psycopg.connect(self.database_url) as conn:
                 with conn.cursor() as cur:
                     cur.execute(
                         """
@@ -30,7 +37,7 @@ class UserRepository:
         
     def get_user_by_id(self, user_id: int) -> Optional[User]:
         """Get user with all spending categories"""
-        with psycopg.connect("dbname=rewardInfo") as conn:
+        with psycopg.connect(self.database_url) as conn:
             with conn.cursor() as cur:
                 cur.execute("""
                 SELECT * FROM users WHERE id = %s """, (user_id,))
@@ -86,7 +93,7 @@ class UserRepository:
         
     def update_user(self, user_id: int, user_data: User) -> User:
         """Update user info (income, credit score, etc.)"""
-        with psycopg.connect("dbname=rewardInfo") as conn:
+        with psycopg.connect(self.database_url) as conn:
             with conn.cursor() as cur:
                 cur.execute(
                     """UPDATE users SET (name=%s, email=%s, credit_score=%s, annual_income=%s )
@@ -105,7 +112,7 @@ class UserRepository:
         
     def delete_user(self, user_id: int) -> bool:
         """Soft delete or hard delete user"""
-        with psycopg.connect("dbname=rewardInfo") as conn:
+        with psycopg.connect(self.database_url) as conn:
             with conn.cursor() as cur:
                 cur.execute("""DELETE FROM users WHERE user_id=%s""", (user_id,))
 
@@ -120,7 +127,7 @@ class UserRepository:
         
     def add_spending_category(self, user_id: int, spending: SpendingCategoryUser) -> SpendingCategoryUser:
         """Add or update a spending category"""
-        with psycopg.connect("dbname=rewardInfo") as conn:
+        with psycopg.connect(self.database_url) as conn:
             with conn.cursor() as cur:
                 cur.execute("""
                             INSERT INTO user_spending_category (user_id, category, user_spend)
@@ -141,7 +148,7 @@ class UserRepository:
 
     def remove_spending_category(self, user_id: int, category: SpendingCategoryUser) -> bool:
         """Remove a spending category"""
-        with psycopg.connect("dbname=rewardInfo") as conn:
+        with psycopg.connect(self.database_url) as conn:
             with conn.cursor() as cur:
                 cur.execute("""
                             DELETE FROM user_spending_category
@@ -159,7 +166,7 @@ class UserRepository:
 
     def add_authorized_user_info(self, au_info: AuthorizedUserInfo) -> AuthorizedUserInfo:
         """add authorized user info"""
-        with psycopg.connect("dbname=rewardInfo") as conn:
+        with psycopg.connect(self.database_url) as conn:
             with conn.cursor() as cur:   
 
                 cur.execute("""
@@ -178,7 +185,7 @@ class UserRepository:
         
     def delete_authorized_user_info(self, au_id: int) -> bool:
         """delete authorized user info"""
-        with psycopg.connect("dbname=rewardInfo") as conn:
+        with psycopg.connect(self.database_url) as conn:
             with conn.cursor() as cur:
                 cur.execute("""
                             DELETE FROM authorized_user_info
