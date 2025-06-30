@@ -4,22 +4,25 @@ from datetime import datetime
 from typing import List, Optional
 
 class SpendingCategoryUser(BaseModel):
-    id: Optional[int]
+    id: Optional[int] = None
     user_id: int
     category: SpendingCategory
     user_spend: float
 
 class AuthorizedUserInfo(BaseModel):
-    id: Optional[int]
+    id: Optional[int] = None
     user_id: int
     bank_id: int
     add_after_age_eighteen: bool
 
 
 class User(BaseModel):
-    id: Optional[str]
+    id: Optional[int] = None
     name: str
     email: EmailStr
     credit_score: CreditScoreRating
     annual_income: int
-    created_at: Optional[datetime]
+    created_at: Optional[datetime] = None
+
+    def __eq__(self, other):
+        return self.id == other.id and self.name == other.name

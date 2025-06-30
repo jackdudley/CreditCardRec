@@ -26,7 +26,6 @@ CREATE TABLE credit_cards (
     sub_description TEXT,
     annual_fee INTEGER NOT NULL DEFAULT 0,
     foreign_transaction_fee DECIMAL(5,3) NOT NULL DEFAULT 0.000,
-    spending_categories spending_category[] NOT NULL,
     reward_structure reward_structure NOT NULL,
     fee_credits TEXT,
     other_benefits TEXT,

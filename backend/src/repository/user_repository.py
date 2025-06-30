@@ -34,38 +34,12 @@ class UserRepository:
         with psycopg.connect(self.database_url) as conn:
             with conn.cursor() as cur:
                 cur.execute("""
-                SELECT * FROM users WHERE id = %s """, (user_id,))
+                SELECT * FROM users WHERE id=%s """, (user_id,))
                 ...
                 user_row = cur.fetchone()
+
                 if not user_row:
                     return None
-                
-                cur.execute("""
-                SELECT id, category, user_spend 
-                FROM user_spending_category 
-                WHERE user_id = %s
-            """, (user_id,))
-                
-                spending_rows = cur.fetchall()
-
-                cur.execute("""
-                SELECT id, bank_id, add_after_age_eighteen,
-                FROM authorized_user_info 
-                WHERE user_id = %s
-            """, (user_id,))
-                
-                au_row = cur.fetchall()
-
-                au_info = []
-
-                if au_row:
-                    au_info = AuthorizedUserInfo (
-                        id = au_row[0],
-                        user_id = user_id,
-                        bank_id = au_row[1],
-                        add_after_age_eighteen = au_row[2]
-                    )
-
 
                 user = User(
                     id = user_row[0],
@@ -81,23 +55,23 @@ class UserRepository:
                 return user
 
         
-    def update_user(self, user_id: int, user_data: User) -> User:
+    def update_user(self, user_data: User) -> User:
         """Update user info (income, credit score, etc.)"""
         with psycopg.connect(self.database_url) as conn:
             with conn.cursor() as cur:
                 cur.execute(
-                    """UPDATE users SET (name=%s, email=%s, credit_score=%s, annual_income=%s )
-                    WHERE user_id=%s""", (user_data.name, user_data.email, user_data.credit_score, 
-                    user_data.annual_income, user_id))
+                    """UPDATE users SET name=%s, email=%s, credit_score=%s, annual_income=%s
+                    WHERE id=%s""", (user_data.name, user_data.email, user_data.credit_score, 
+                    user_data.annual_income, user_data.id))
         
-                updated_row = cur.fetchone()
+                updated_row = cur.rowcount
 
                 conn.commit()
 
                 if not updated_row:
                     return None
 
-                return self.get_user_by_id(user_id)
+                return self.get_user_by_id(user_data.id)
 
         
     def delete_user(self, user_id: int) -> bool:
