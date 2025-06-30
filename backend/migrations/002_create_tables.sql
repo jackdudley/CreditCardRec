@@ -38,14 +38,16 @@ CREATE TABLE card_spending_category (
     category spending_category NOT NULL,
     rate DECIMAL(3,2),
     cap INTEGER,
-    quarterly_rotating BOOLEAN NOT NULL DEFAULT FALSE
+    quarterly_rotating BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT NOW()
 );
 
 CREATE TABLE user_spending_category (
     id serial PRIMARY KEY,
     user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
     category spending_category NOT NULL,
-    user_spend INTEGER NOT NULL DEFAULT 0
+    user_spend INTEGER NOT NULL DEFAULT 0,
+    created_at TIMESTAMP DEFAULT NOW()
 );
 
 CREATE TABLE authorized_user_info (

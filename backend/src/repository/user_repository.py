@@ -78,7 +78,7 @@ class UserRepository:
         """Soft delete or hard delete user"""
         with psycopg.connect(self.database_url) as conn:
             with conn.cursor() as cur:
-                cur.execute("""DELETE FROM users WHERE user_id=%s""", (user_id,))
+                cur.execute("""DELETE FROM users WHERE id=%s""", (user_id,))
 
                 deleted_user = cur.rowcount
 
@@ -95,12 +95,15 @@ class UserRepository:
             with conn.cursor() as cur:
                 cur.execute("""
                             INSERT INTO user_spending_category (user_id, category, user_spend)
-                            VALUES %s, %s RETURNING id
+                            VALUES (%s, %s, %s) RETURNING id, created_at
                             """, (user_id, spending.category, spending.user_spend)
                             )
                 
                 added_category = cur.rowcount
-                spending.id = cur.fetchone[0]
+                
+                spending_row = cur.fetchone()
+                spending.id = spending_row[0]
+                spending.created_at = spending_row[1]
 
                 conn.commit()
 
@@ -110,14 +113,14 @@ class UserRepository:
                     return None
                 
 
-    def remove_spending_category(self, user_id: int, category: SpendingCategoryUser) -> bool:
+    def remove_spending_category_by_id(self, user_category_id: int) -> bool:
         """Remove a spending category"""
         with psycopg.connect(self.database_url) as conn:
             with conn.cursor() as cur:
                 cur.execute("""
                             DELETE FROM user_spending_category
-                            WHERE user_id=%s AND category=%s
-                            """, (category, user_id))
+                            WHERE id=%s
+                            """, (user_category_id,))
                 
                 deleted_category = cur.rowcount
 
@@ -134,9 +137,9 @@ class UserRepository:
             with conn.cursor() as cur:   
 
                 cur.execute("""
-                            INSERT INTO authorized_user_info (user_id, bank_id, add_after_eighteen)
-                            VALUES %s,%s,%s RETURNING id
-                            """, au_info.user_id, au_info.bank_id, au_info.add_after_age_eighteen)
+                            INSERT INTO authorized_user_info (user_id, bank_id, add_after_age_eighteen)
+                            VALUES (%s,%s,%s) RETURNING id
+                            """, (au_info.user_id, au_info.bank_id, au_info.add_after_age_eighteen))
                 
                 inserted_row = cur.fetchone()
 
@@ -159,6 +162,33 @@ class UserRepository:
                 deleted_info = cur.rowcount
                 conn.commit()
                 if(deleted_info):
+                    return True
+                else:
+                    return False
+    def get_spending_catagories_by_user(self, user_id) -> List[SpendingCategoryUser]:
+        with psycopg.connect(self.database_url) as conn:
+            with conn.cursor() as cur:
+                cur.execute("""
+                            SELECT * FROM user_spending_catagory WHERE id=%s
+                            """, (user_id,))
+                
+                retrieved_info = cur.rowcount
+                conn.commit()
+                if(retrieved_info):
+                    return True
+                else:
+                    return False
+                
+    def get_spending_catagories_by_user(self, user_id) -> List[SpendingCategoryUser]:
+        with psycopg.connect(self.database_url) as conn:
+            with conn.cursor() as cur:
+                cur.execute("""
+                            SELECT * FROM user_spending_catagory WHERE id=%s
+                            """, (user_id,))
+                
+                retrieved_info = cur.rowcount
+                conn.commit()
+                if(retrieved_info):
                     return True
                 else:
                     return False

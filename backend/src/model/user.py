@@ -8,12 +8,14 @@ class SpendingCategoryUser(BaseModel):
     user_id: int
     category: SpendingCategory
     user_spend: float
+    created_at: Optional[datetime] = None
 
 class AuthorizedUserInfo(BaseModel):
     id: Optional[int] = None
     user_id: int
     bank_id: int
     add_after_age_eighteen: bool
+    created_at: Optional[datetime] = None
 
 
 class User(BaseModel):
