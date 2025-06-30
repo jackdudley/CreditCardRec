@@ -51,12 +51,11 @@ class TestUserRepository():
 
         assert user_test is None
 
-    def test_update_user(self, user_repo, sample_user):
+    def test_update_user_found(self, user_repo, sample_user):
 
         #Arrange
 
         user_og = user_repo.create_user(sample_user)
-        print(user_og.id)
 
 
         user_updated = User(
@@ -75,7 +74,27 @@ class TestUserRepository():
 
         assert updated_user == user_updated
 
-        
+    def test_update_user_not_found(self, user_repo, sample_user):
+
+        #Arrange
+
+        user_repo.create_user(sample_user)
+
+        user_updated = User(
+        id=999,
+        name="Updated User",
+        email="updated@example.com",
+        annual_income=100000,
+        credit_score="excellent"
+        )
+
+        #Act
+
+        updated_user = user_repo.update_user(user_updated)
+
+        #Assert
+
+        assert updated_user is None
 
         
 
