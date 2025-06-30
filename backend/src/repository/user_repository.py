@@ -1,6 +1,6 @@
 import psycopg
 from typing import Optional, List
-from model.user import User, SpendingCategoryUser, AuthorizedUserInfo
+from src.model.user import User, SpendingCategoryUser, AuthorizedUserInfo
 import os
 from dotenv import load_dotenv
 
@@ -25,12 +25,6 @@ class UserRepository:
                     result = cur.fetchone()
                     user.id = result[0]
                     user.created_at = result[1]
-
-                    for spending in user.spending_categories:
-                        cur.execute("""
-                            INSERT INTO user_spending (user_id, category, monthly_amount)
-                            VALUES (%s, %s, %s)
-                        """, (user.id, spending.category, spending.user_spend))
                     
                     conn.commit()
                     return user
@@ -77,10 +71,6 @@ class UserRepository:
                     id = user_row[0],
                     name = user_row[1],
                     email = user_row[2],
-                    spending_categories = [
-                        SpendingCategoryUser(id = row[0], category = row[1],
-                                             user_spend = row[2]) for row in spending_rows],
-                    authorized_user_info = au_info if au_info else [],
                     credit_score= user_row[3],
                     annual_income= user_row[4],
                     created_at= user_row[5]

@@ -2,8 +2,7 @@ CREATE TABLE users (
     id serial PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
     email VARCHAR(255) UNIQUE NOT NULL,
-    authorized_user_info INTEGER REFERENCES authorized_user_info(id),
-    credit_score credit_score_rating,
+    credit_score credit_score,
     annual_income INTEGER,
     created_at TIMESTAMP DEFAULT NOW()
 );
@@ -15,7 +14,7 @@ CREATE TABLE banks (
     transfer_points_value_cents DECIMAL(5,2),
     reports_under_eighteen boolean NOT NULL DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT NOW()
-)
+);
 
 
 CREATE TABLE credit_cards (
@@ -32,7 +31,7 @@ CREATE TABLE credit_cards (
     fee_credits TEXT,
     other_benefits TEXT,
     created_at TIMESTAMP DEFAULT NOW()
-)
+);
 
 CREATE TABLE card_spending_category (
     id serial PRIMARY KEY,
@@ -41,14 +40,14 @@ CREATE TABLE card_spending_category (
     rate DECIMAL(3,2),
     cap INTEGER,
     quarterly_rotating BOOLEAN NOT NULL DEFAULT FALSE
-)
+);
 
 CREATE TABLE user_spending_category (
     id serial PRIMARY KEY,
     user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
     category spending_category NOT NULL,
     user_spend INTEGER NOT NULL DEFAULT 0
-)
+);
 
 CREATE TABLE authorized_user_info (
     id serial PRIMARY KEY,
@@ -56,7 +55,7 @@ CREATE TABLE authorized_user_info (
     bank_id  INTEGER REFERENCES banks(id),
     add_after_age_eighteen BOOLEAN NOT NULL DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT NOW()
-)
+);
 
 
 

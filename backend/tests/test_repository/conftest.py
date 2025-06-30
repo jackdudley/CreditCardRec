@@ -1,20 +1,20 @@
+import os
 import pytest
 import psycopg
-from src.model.user import User
-from src.respository.user_repository import UserRepository
 from dotenv import load_dotenv
-import os
+from src.model.user import User
+from src.repository.user_repository import UserRepository
 
 load_dotenv()
 
 @pytest.fixture
-def get_db_conn():
+def test_db_connection():
     """Create a test database connection"""
     conn = psycopg.connect(os.getenv("TEST_DB_URL"))
     yield conn
     conn.close()
 
-@pytest.fixture
+@pytest.fixture(autouse=True)
 def clean_db(test_db_connection):
     """Clean database before each test"""
     with test_db_connection.cursor() as cur:

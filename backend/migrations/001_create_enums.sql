@@ -1,4 +1,4 @@
-CREATE TYPE credit_score AS ENUM ('excellent', 'good', 'fair', 'poor', 'none') 
+CREATE TYPE credit_score AS ENUM ('excellent', 'good', 'fair', 'poor', 'none');
 CREATE TYPE spending_category AS ENUM (
     'gas',
     'groceries', 
