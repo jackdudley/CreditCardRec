@@ -1,12 +1,12 @@
-from enums import RewardStructure, SpendingCatagory, CardType
+from enums import RewardStructure, SpendingCategory, CardType
 from typing import Optional
 from datetime import datetime
 from pydantic import BaseModel
 
-class SpendingCatagoryInfo():
+class SpendingCategoryInfo():
     id: Optional[int] = None
     card_id: int
-    category: SpendingCatagory
+    category: SpendingCategory
     rate: float
     cap: Optional[float] = None
     quarterly_rotating: bool = False
@@ -28,7 +28,7 @@ class Card(BaseModel):
     sub_description: Optional[str]
     annual_fee: int = 0
     foreign_transaction_fee: Optional[float] = None
-    spending_catagories: list[SpendingCatagoryInfo] = []
+    spending_catagories: list[SpendingCategoryInfo] = []
     reward_structure: RewardStructure
     fee_credits: Optional[str] = None
     other_benefits: Optional[str] = None

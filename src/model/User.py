@@ -1,15 +1,15 @@
 from pydantic import BaseModel, EmailStr
-from enums import SpendingCatagory, CreditScoreRating
+from enums import SpendingCategory, CreditScoreRating
 from datetime import datetime
 from typing import Optional
 
-class SpendingCatagoryUser():
+class SpendingCategoryUser():
     id: int
     user_id: int
-    catagory: SpendingCatagory
+    category: SpendingCategory
     user_spend: float
 
-class AuthoritzedUserInfo():
+class AuthorizedUserInfo():
     id: int
     user_id: int
     bank_id: int
@@ -20,7 +20,7 @@ class User(BaseModel):
     id: str
     name: str
     email: EmailStr
-    spending_catagories: SpendingCatagoryUser = []
+    spending_categories: SpendingCategory = []
     authorized_user_info = AuthoritzedUserInfo = []
     credit_score: CreditScoreRating
     annual_income: int
