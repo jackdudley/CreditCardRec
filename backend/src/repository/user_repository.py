@@ -166,6 +166,7 @@ class UserRepository:
                 else:
                     return False
     def get_spending_categories_by_user(self, user_id) -> List[SpendingCategoryUser]:
+        """Get spending category by a given user id"""
         with psycopg.connect(self.database_url) as conn:
             with conn.cursor() as cur:
                 cur.execute("""

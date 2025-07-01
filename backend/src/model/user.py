@@ -20,6 +20,8 @@ class AuthorizedUserInfo(BaseModel):
     add_after_age_eighteen: bool
     created_at: Optional[datetime] = None
 
+    def __eq__(self, other):
+        return self.id == other.id and self.user_id == other.user_id and self.created_at == other.created_at
 
 class User(BaseModel):
     id: Optional[int] = None
