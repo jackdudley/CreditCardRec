@@ -89,14 +89,14 @@ class UserRepository:
                 else:
                     return False
         
-    def add_spending_category(self, user_id: int, spending: SpendingCategoryUser) -> SpendingCategoryUser:
+    def add_spending_category(self, spending: SpendingCategoryUser) -> SpendingCategoryUser:
         """Add or update a spending category"""
         with psycopg.connect(self.database_url) as conn:
             with conn.cursor() as cur:
                 cur.execute("""
                             INSERT INTO user_spending_category (user_id, category, user_spend)
                             VALUES (%s, %s, %s) RETURNING id, created_at
-                            """, (user_id, spending.category, spending.user_spend)
+                            """, (spending.user_id, spending.category, spending.user_spend)
                             )
                 
                 added_category = cur.rowcount
@@ -165,30 +165,24 @@ class UserRepository:
                     return True
                 else:
                     return False
-    def get_spending_catagories_by_user(self, user_id) -> List[SpendingCategoryUser]:
+    def get_spending_categories_by_user(self, user_id) -> List[SpendingCategoryUser]:
         with psycopg.connect(self.database_url) as conn:
             with conn.cursor() as cur:
                 cur.execute("""
-                            SELECT * FROM user_spending_catagory WHERE id=%s
+                            SELECT * FROM user_spending_category WHERE user_id=%s ORDER BY id
                             """, (user_id,))
                 
-                retrieved_info = cur.rowcount
+                retrieved_info = cur.fetchall()
+                return_list = [SpendingCategoryUser(
+                    id=row[0],
+                    user_id=row[1],
+                    category=row[2],
+                    user_spend=row[3],
+                    created_at=row[4]
+                ) for row in retrieved_info]
                 conn.commit()
                 if(retrieved_info):
-                    return True
+                    return return_list
                 else:
-                    return False
-                
-    def get_spending_catagories_by_user(self, user_id) -> List[SpendingCategoryUser]:
-        with psycopg.connect(self.database_url) as conn:
-            with conn.cursor() as cur:
-                cur.execute("""
-                            SELECT * FROM user_spending_catagory WHERE id=%s
-                            """, (user_id,))
-                
-                retrieved_info = cur.rowcount
-                conn.commit()
-                if(retrieved_info):
-                    return True
-                else:
-                    return False
+                    return []
+            

@@ -10,6 +10,9 @@ class SpendingCategoryUser(BaseModel):
     user_spend: float
     created_at: Optional[datetime] = None
 
+    def __eq__(self, other):
+        return self.id == other.id and self.user_id == other.user_id and self.created_at == other.created_at
+
 class AuthorizedUserInfo(BaseModel):
     id: Optional[int] = None
     user_id: int

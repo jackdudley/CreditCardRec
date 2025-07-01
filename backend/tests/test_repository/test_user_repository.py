@@ -1,6 +1,4 @@
-import pytest
-import psycopg
-from src.model.user import User, SpendingCategoryUser, AuthorizedUserInfo
+from src.model.user import User, SpendingCategoryUser
 from src.model.card import Bank
 from src.model.enums import SpendingCategory
 class TestUserRepository():
@@ -138,7 +136,7 @@ class TestUserRepository():
 
         #Act
 
-        result: SpendingCategoryUser = user_repo.add_spending_category(user.id, spending_cat)
+        result: SpendingCategoryUser = user_repo.add_spending_category(spending_cat)
 
         #Assert
 
@@ -160,7 +158,7 @@ class TestUserRepository():
             user_spend=300
         )
         
-        add: SpendingCategoryUser = user_repo.add_spending_category(user.id, spending_cat)
+        add: SpendingCategoryUser = user_repo.add_spending_category(spending_cat)
 
         #Act
 
@@ -182,7 +180,7 @@ class TestUserRepository():
             user_spend=300
         )
         
-        add: SpendingCategoryUser = user_repo.add_spending_category(user.id, spending_cat)
+        add: SpendingCategoryUser = user_repo.add_spending_category(spending_cat)
 
         #Act
 
@@ -224,3 +222,36 @@ class TestUserRepository():
     #     assert auth_info.id is not None
     #     assert auth_info.created_at is not None
 
+    def test_get_spending_categories_by_user(self, user_repo, sample_user):
+
+        #Arrange
+        user = user_repo.create_user(sample_user)
+
+        spending_cat = SpendingCategoryUser(
+            user_id=user.id,
+            category=SpendingCategory.GAS,
+            user_spend=300
+        )
+
+        spending_cat_two = SpendingCategoryUser(
+            user_id=user.id,
+            category=SpendingCategory.PUBLIC_TRANSIT,
+            user_spend=50
+        )
+
+        real_spending_cat = user_repo.add_spending_category(spending_cat)
+        real_spending_cat_two = user_repo.add_spending_category(spending_cat_two)
+
+        inital_list = [real_spending_cat, real_spending_cat_two]
+        
+        #Act
+
+        result = user_repo.get_spending_categories_by_user(user.id)
+
+        #Assert
+
+        assert result is not None
+        print(result)
+        print(inital_list)
+        assert result == inital_list
+        
