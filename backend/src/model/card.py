@@ -3,13 +3,18 @@ from typing import Optional
 from datetime import datetime
 from pydantic import BaseModel
 
-class SpendingCategoryInfo():
+class SpendingCategoryInfo(BaseModel):
     id: Optional[int] = None
     card_id: int
     category: SpendingCategory
     rate: float
     cap: Optional[float] = None
     quarterly_rotating: bool = False
+
+    def __eq__(self, other):
+        if(other.isistance(SpendingCategoryInfo)):
+            return self.category == other.category and self.rate == other.rate
+        return False
 
 class Bank(BaseModel):
     id: Optional[int] = None
@@ -27,7 +32,7 @@ class Card(BaseModel):
     sub_max_value: Optional[int] = None
     sub_description: Optional[str] = None
     annual_fee: int = 0
-    foreign_transaction_fee: Optional[float] = None
+    foreign_transaction_fee: Optional[float] = 0
     reward_structure: RewardStructure
     fee_credits: Optional[str] = None
     other_benefits: Optional[str] = None
