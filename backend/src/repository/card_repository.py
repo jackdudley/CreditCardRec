@@ -237,5 +237,6 @@ class CardRepository:
             foreign_transaction_fee=r[5],
             reward_structure=_enum_from_db(RewardStructure, r[6]),
             created_at=r[7],
-            spending_categories=[],  # hydrated by caller
+            spending_categories=[],
         )
+    
