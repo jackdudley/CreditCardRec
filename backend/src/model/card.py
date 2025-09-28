@@ -3,21 +3,21 @@ from typing import Optional
 from datetime import datetime
 from pydantic import BaseModel
 from typing import List
-class SpendingCategoryInfo(BaseModel):
+
+class CardSpendingCategory(BaseModel):
     id: Optional[int] = None
     category: SpendingCategory
-
-    def __eq__(self, other):
-        if(other.isinstance(SpendingCategoryInfo)):
-            return self.category == other.category and self.rate == other.rate
-        return False
-    
-class CardSpendingCategory(BaseModel, SpendingCategoryInfo):
     rate: float
     cap: Optional[float] = None
     quarterly_rotating: bool = False
+    def __eq__(self, other):
+        if(other.isinstance(CardSpendingCategory)):
+            return self.category == other.category and self.rate == other.rate
+        return False
 
-class UserSpendingCategory(BaseModel, SpendingCategoryInfo):
+class UserSpendingCategory(BaseModel):
+    id: Optional[int] = None
+    category: SpendingCategory
     user_spend: int
 
 class Bank(BaseModel):
@@ -36,5 +36,5 @@ class Card(BaseModel):
     annual_fee: int = 0
     foreign_transaction_fee: Optional[float] = 0
     reward_structure: RewardStructure
-    spending_categories: List[SpendingCategoryInfo]
+    spending_categories: List[CardSpendingCategory]
     created_at: Optional[datetime] = None
