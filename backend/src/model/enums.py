@@ -8,7 +8,7 @@ class CreditScoreRating(str, Enum):
     POOR = "poor"
     NONE = "none"
 
-class SpendingCategory(str, Enum):
+class SpendingCategoryType(str, Enum):
     GAS = "gas"
     GROCERIES = "groceries"
     DINING = "dining"

@@ -1,12 +1,11 @@
 from pydantic import BaseModel, EmailStr, Field
-from .enums import SpendingCategory, CreditScoreRating
+from .enums import SpendingCategoryType, CreditScoreRating
 from datetime import datetime
 from typing import List, Optional
 
-class SpendingCategoryUser(BaseModel):
+class SpendingCategory(BaseModel):
     id: Optional[int] = None
-    user_id: int
-    category: SpendingCategory
+    category: SpendingCategoryType
     user_spend: float
     created_at: Optional[datetime] = None
 
@@ -15,9 +14,9 @@ class SpendingCategoryUser(BaseModel):
 
 class AuthorizedUserInfo(BaseModel):
     id: Optional[int] = None
-    user_id: int
     bank_id: int
     add_after_age_eighteen: bool
+    since: datetime
     created_at: Optional[datetime] = None
 
     def __eq__(self, other):
@@ -28,6 +27,8 @@ class User(BaseModel):
     name: str
     email: EmailStr
     credit_score: CreditScoreRating
+    spending_categories: List[SpendingCategory]
+    authorized_user_history: AuthorizedUserInfo
     annual_income: int
     created_at: Optional[datetime] = None
 
