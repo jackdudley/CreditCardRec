@@ -6,14 +6,19 @@ from typing import List
 class SpendingCategoryInfo(BaseModel):
     id: Optional[int] = None
     category: SpendingCategory
-    rate: float
-    cap: Optional[float] = None
-    quarterly_rotating: bool = False
 
     def __eq__(self, other):
         if(other.isinstance(SpendingCategoryInfo)):
             return self.category == other.category and self.rate == other.rate
         return False
+    
+class CardSpendingCategory(BaseModel, SpendingCategoryInfo):
+    rate: float
+    cap: Optional[float] = None
+    quarterly_rotating: bool = False
+
+class UserSpendingCategory(BaseModel, SpendingCategoryInfo):
+    user_spend: int
 
 class Bank(BaseModel):
     id: Optional[int] = None
