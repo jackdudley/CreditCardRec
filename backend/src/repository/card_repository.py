@@ -11,7 +11,6 @@ from src.model.card import (
 )
 from src.model.enums import SpendingCategoryType as SpendingCategoryEnum  # adjust if your name differs
 
-
 def _enum_to_db(v):
     return None if v is None else getattr(v, "value", str(v))
 
