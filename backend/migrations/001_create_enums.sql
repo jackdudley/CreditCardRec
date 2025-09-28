@@ -1,5 +1,5 @@
 CREATE TYPE credit_score AS ENUM ('excellent', 'good', 'fair', 'poor', 'none');
-CREATE TYPE spending_category AS ENUM (
+CREATE TYPE spending_category_info AS ENUM (
     'gas',
     'groceries', 
     'dining',
@@ -13,7 +13,8 @@ CREATE TYPE spending_category AS ENUM (
 
 CREATE TYPE reward_structure AS ENUM (
     'points',
-    'cashback'
+    'cashback',
+    'none'
 );
 
 CREATE TYPE card_type AS ENUM (

@@ -22,6 +22,7 @@ class SpendingCategoryType(str, Enum):
 class RewardStructure(str, Enum):
     POINTS = "points"
     CASHBACK = "cashback"
+    NONE = "none"
 
 class CardType(str, Enum):
     STUDENT = "student"
