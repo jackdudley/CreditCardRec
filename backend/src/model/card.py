@@ -12,7 +12,7 @@ class SpendingCategoryInfo(BaseModel):
     quarterly_rotating: bool = False
 
     def __eq__(self, other):
-        if(other.isistance(SpendingCategoryInfo)):
+        if(other.isinstance(SpendingCategoryInfo)):
             return self.category == other.category and self.rate == other.rate
         return False
 
@@ -34,7 +34,7 @@ class Card(BaseModel):
     annual_fee: int = 0
     foreign_transaction_fee: Optional[float] = 0
     reward_structure: RewardStructure
-    spending_categoies: List[SpendingCategoryInfo]
+    spending_categories: List[SpendingCategoryInfo]
    #fee_credits: Optional[str] = None
    # other_benefits: Optional[str] = None
     created_at: Optional[datetime] = None

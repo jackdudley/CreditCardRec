@@ -14,6 +14,7 @@ class SpendingCategory(BaseModel):
 
 class AuthorizedUserInfo(BaseModel):
     id: Optional[int] = None
+    user_id: int
     bank_id: int
     add_after_age_eighteen: bool
     since: datetime
@@ -28,7 +29,6 @@ class User(BaseModel):
     email: EmailStr
     credit_score: CreditScoreRating
     spending_categories: List[SpendingCategory]
-    authorized_user_history: AuthorizedUserInfo
     annual_income: int
     created_at: Optional[datetime] = None
 
