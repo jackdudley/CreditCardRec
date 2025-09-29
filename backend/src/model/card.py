@@ -2,19 +2,23 @@ from .enums import RewardStructure, SpendingCategory, CardType
 from typing import Optional
 from datetime import datetime
 from pydantic import BaseModel
+from typing import List
 
-class SpendingCategoryInfo(BaseModel):
+class CardSpendingCategory(BaseModel):
     id: Optional[int] = None
-    card_id: int
     category: SpendingCategory
     rate: float
     cap: Optional[float] = None
     quarterly_rotating: bool = False
-
     def __eq__(self, other):
-        if(other.isistance(SpendingCategoryInfo)):
+        if(other.isinstance(CardSpendingCategory)):
             return self.category == other.category and self.rate == other.rate
         return False
+
+class UserSpendingCategory(BaseModel):
+    id: Optional[int] = None
+    category: SpendingCategory
+    user_spend: int
 
 class Bank(BaseModel):
     id: Optional[int] = None
@@ -29,11 +33,8 @@ class Card(BaseModel):
     name: str
     bank_id: int
     card_type: CardType
-    sub_max_value: Optional[int] = None
-    sub_description: Optional[str] = None
     annual_fee: int = 0
     foreign_transaction_fee: Optional[float] = 0
     reward_structure: RewardStructure
-    fee_credits: Optional[str] = None
-    other_benefits: Optional[str] = None
+    spending_categories: List[CardSpendingCategory]
     created_at: Optional[datetime] = None

@@ -8,7 +8,7 @@ class CreditScoreRating(str, Enum):
     POOR = "poor"
     NONE = "none"
 
-class SpendingCategory(str, Enum):
+class SpendingCategoryType(str, Enum):
     GAS = "gas"
     GROCERIES = "groceries"
     DINING = "dining"
@@ -22,6 +22,7 @@ class SpendingCategory(str, Enum):
 class RewardStructure(str, Enum):
     POINTS = "points"
     CASHBACK = "cashback"
+    NONE = "none"
 
 class CardType(str, Enum):
     STUDENT = "student"

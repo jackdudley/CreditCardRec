@@ -1,314 +1,241 @@
-import psycopg
-from typing import Optional, List
-from src.model.card import Card, SpendingCategory, CardType, RewardStructure
 import os
-from dotenv import load_dotenv
+from typing import Optional, List
+import psycopg
+from psycopg.rows import tuple_row
 
-load_dotenv()
+from src.model.card import (
+    Card,
+    CardType,
+    RewardStructure,
+    CardSpendingCategory,  # <- use the card-level category model
+)
+from src.model.enums import SpendingCategoryType as SpendingCategoryEnum  # adjust if your name differs
+
+def _enum_to_db(v):
+    return None if v is None else getattr(v, "value", str(v))
+
+def _enum_from_db(enum_cls, s):
+    try:
+        return enum_cls(s)
+    except Exception:
+        return s  # fallback if not strict
+
 
 class CardRepository:
-
-    def __init__(self, database_url=None):
+    def __init__(self, database_url: Optional[str] = None):
         self.database_url = database_url or os.getenv("DATABASE_URL")
 
+    # ---------- CREATE ----------
     def create_card(self, card: Card) -> Card:
+        """
+        Inserts a card, then inserts its spending categories into card_spending_category.
+        """
         with psycopg.connect(self.database_url) as conn:
-            with conn.cursor() as cur:
-                cur.execute("""
-                INSERT INTO credit_cards (name, bank_id, card_type, sub_max_value, sub_description, foreign_transaction_fee, annual_fee, reward_structure,
-                            fee_credits, other_benefits) VALUES
-                            (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id, created_at
-                            """, (card.name, card.bank_id, card.card_type, card.sub_max_value, card.sub_description, card.foreign_transaction_fee, card.annual_fee, card.reward_structure,
-                            card.fee_credits, card.other_benefits)
-                            )
-
-                row_add = cur.fetchone()
-                card.id = row_add[0]
-                card.created_at = row_add[1]
-
-                conn.commit()
-
-                return card
-            
-    def get_card_by_id(self, card_id: int) -> Card:
-        with psycopg.connect(self.database_url) as conn:
-            with conn.cursor() as cur:
-                cur.execute("""
-                    SELECT * FROM credit_cards WHERE id=%s
-                """, (card_id,))
-                
-                card_row = cur.fetchone()
-                
-                if not card_row:
-                    return None
-                
-                card = Card(
-                    id=card_row[0],
-                    name=card_row[1],
-                    bank_id=card_row[2],
-                    card_type=card_row[3],
-                    sub_max_value=card_row[4],
-                    sub_description=card_row[5],
-                    annual_fee=card_row[6],
-                    foreign_transaction_fee=card_row[7],
-                    reward_structure=card_row[8],
-                    fee_credits=card_row[9],
-                    other_benefits=card_row[10],
-                    created_at=card_row[11]
+            with conn.cursor(row_factory=tuple_row) as cur:
+                cur.execute(
+                    """
+                    INSERT INTO credit_cards
+                        (name, bank_id, card_type, annual_fee, foreign_transaction_fee, reward_structure)
+                    VALUES (%s, %s, %s, %s, %s, %s)
+                    RETURNING id, name, bank_id, card_type, annual_fee, foreign_transaction_fee, reward_structure, created_at
+                    """,
+                    (
+                        card.name,
+                        card.bank_id,
+                        _enum_to_db(card.card_type),
+                        card.annual_fee,
+                        card.foreign_transaction_fee,
+                        _enum_to_db(card.reward_structure),
+                    ),
                 )
-                
-                return card
-    def update_card(self, card: Card) -> Optional[Card]:
-        """Update a card with all fields"""
-        with psycopg.connect(self.database_url) as conn:
-            with conn.cursor() as cur:
-                cur.execute("""
-                    UPDATE credit_cards
-                    SET name = %s, bank_id = %s, card_type = %s, sub_max_value = %s, 
-                        sub_description = %s, annual_fee = %s, foreign_transaction_fee = %s,
-                        reward_structure = %s, fee_credits = %s, other_benefits = %s
-                    WHERE id = %s
-                    RETURNING *
-                """, (
-                    card.name,
-                    card.bank_id,
-                    card.card_type,
-                    card.sub_max_value,
-                    card.sub_description,
-                    card.annual_fee,
-                    card.foreign_transaction_fee,
-                    card.reward_structure,
-                    card.fee_credits,
-                    card.other_benefits,
-                    card.id
-                ))
-                
-                updated_row = cur.fetchone()
-                
-                if not updated_row:
-                    return None
-                
+                row = cur.fetchone()
+                card_id = row[0]
+
+                for sc in (card.spending_categories or []):
+                    cur.execute(
+                        """
+                        INSERT INTO card_spending_category
+                            (card_id, category, rate, cap, quarterly_rotating)
+                        VALUES (%s, %s, %s, %s, %s)
+                        ON CONFLICT (card_id, category) DO UPDATE
+                          SET rate = EXCLUDED.rate,
+                              cap = EXCLUDED.cap,
+                              quarterly_rotating = EXCLUDED.quarterly_rotating
+                        """,
+                        (
+                            card_id,
+                            _enum_to_db(getattr(sc, "category", None)),
+                            getattr(sc, "rate", None),
+                            getattr(sc, "cap", None),
+                            getattr(sc, "quarterly_rotating", False),
+                        ),
+                    )
+
                 conn.commit()
-                
-                # Update the passed card object with any DB changes
-                card.created_at = updated_row[11]
-                
+
+                created = self._row_to_card(row)
+                created.spending_categories = self._get_card_categories_by_conn(cur, card_id)
+                return created
+
+    def get_card_by_id(self, card_id: int) -> Optional[Card]:
+        with psycopg.connect(self.database_url) as conn:
+            with conn.cursor(row_factory=tuple_row) as cur:
+                cur.execute(
+                    """
+                    SELECT id, name, bank_id, card_type, annual_fee, foreign_transaction_fee, reward_structure, created_at
+                    FROM credit_cards
+                    WHERE id = %s
+                    """,
+                    (card_id,),
+                )
+                row = cur.fetchone()
+                if not row:
+                    return None
+                card = self._row_to_card(row)
+                card.spending_categories = self._get_card_categories_by_conn(cur, card.id)
                 return card
-            
+
+    def get_all_cards(self, limit: Optional[int] = None, offset: int = 0) -> List[Card]:
+        sql = """
+            SELECT id, name, bank_id, card_type, annual_fee, foreign_transaction_fee, reward_structure, created_at
+            FROM credit_cards
+            ORDER BY created_at DESC
+        """
+        params: List = []
+        if limit is not None:
+            sql += " LIMIT %s OFFSET %s"
+            params.extend([limit, offset])
+        elif offset > 0:
+            sql += " OFFSET %s"
+            params.append(offset)
+
+        with psycopg.connect(self.database_url) as conn:
+            with conn.cursor(row_factory=tuple_row) as cur:
+                cur.execute(sql, params)
+                cards = [self._row_to_card(r) for r in cur.fetchall()]
+                for c in cards:
+                    c.spending_categories = self._get_card_categories_by_conn(cur, c.id)
+                return cards
+
+    def get_cards_by_bank(self, bank_id: int) -> List[Card]:
+        with psycopg.connect(self.database_url) as conn:
+            with conn.cursor(row_factory=tuple_row) as cur:
+                cur.execute(
+                    """
+                    SELECT id, name, bank_id, card_type, annual_fee, foreign_transaction_fee, reward_structure, created_at
+                    FROM credit_cards
+                    WHERE bank_id = %s
+                    ORDER BY name
+                    """,
+                    (bank_id,),
+                )
+                cards = [self._row_to_card(r) for r in cur.fetchall()]
+                for c in cards:
+                    c.spending_categories = self._get_card_categories_by_conn(cur, c.id)
+                return cards
+
+    def update_card(self, card: Card) -> Optional[Card]:
+        if card.id is None:
+            return None
+        with psycopg.connect(self.database_url) as conn:
+            with conn.cursor(row_factory=tuple_row) as cur:
+                cur.execute(
+                    """
+                    UPDATE credit_cards
+                       SET name = %s,
+                           bank_id = %s,
+                           card_type = %s,
+                           annual_fee = %s,
+                           foreign_transaction_fee = %s,
+                           reward_structure = %s
+                     WHERE id = %s
+                 RETURNING id, name, bank_id, card_type, annual_fee, foreign_transaction_fee, reward_structure, created_at
+                    """,
+                    (
+                        card.name,
+                        card.bank_id,
+                        _enum_to_db(card.card_type),
+                        card.annual_fee,
+                        card.foreign_transaction_fee,
+                        _enum_to_db(card.reward_structure),
+                        card.id,
+                    ),
+                )
+                row = cur.fetchone()
+                if not row:
+                    conn.rollback()
+                    return None
+
+                cur.execute("DELETE FROM card_spending_category WHERE card_id = %s", (card.id,))
+                for sc in (card.spending_categories or []):
+                    cur.execute(
+                        """
+                        INSERT INTO card_spending_category
+                            (card_id, category, rate, cap, quarterly_rotating)
+                        VALUES (%s, %s, %s, %s, %s)
+                        ON CONFLICT (card_id, category) DO UPDATE
+                          SET rate = EXCLUDED.rate,
+                              cap = EXCLUDED.cap,
+                              quarterly_rotating = EXCLUDED.quarterly_rotating
+                        """,
+                        (
+                            card.id,
+                            _enum_to_db(getattr(sc, "category", None)),
+                            getattr(sc, "rate", None),
+                            getattr(sc, "cap", None),
+                            getattr(sc, "quarterly_rotating", False),
+                        ),
+                    )
+
+                conn.commit()
+
+                updated = self._row_to_card(row)
+                updated.spending_categories = self._get_card_categories_by_conn(cur, card.id)
+                return updated
 
     def delete_card(self, card_id: int) -> bool:
-        """Delete a card by ID. Returns True if deleted, False if not found"""
         with psycopg.connect(self.database_url) as conn:
             with conn.cursor() as cur:
-                cur.execute("""
-                    DELETE FROM credit_cards WHERE id = %s
-                """, (card_id,))
-                
-                rows_affected = cur.rowcount
+                # child rows will be deleted by ON DELETE CASCADE (if set)
+                cur.execute("DELETE FROM credit_cards WHERE id = %s", (card_id,))
+                deleted = cur.rowcount > 0
                 conn.commit()
-                
-                return rows_affected > 0
-            
-    def get_cards_by_bank(self, bank_id: int) -> List[Card]:
-        """Get allcredit_cardsfor a specific bank"""
-        with psycopg.connect(self.database_url) as conn:
-            with conn.cursor() as cur:
-                cur.execute("""
-                    SELECT * FROM credit_cards WHERE bank_id = %s ORDER BY name
-                """, (bank_id,))
-                
-                card_rows = cur.fetchall()
-                
-                return [
-                    Card(
-                        id=row[0],
-                        name=row[1],
-                        bank_id=row[2],
-                        card_type=row[3],
-                        sub_max_value=row[4],
-                        sub_description=row[5],
-                        annual_fee=row[6],
-                        foreign_transaction_fee=row[7],
-                        reward_structure=row[8],
-                        fee_credits=row[9],
-                        other_benefits=row[10],
-                        created_at=row[11]
-                    ) for row in card_rows
-                ]
-    def get_cards_by_type(self, card_type: CardType) -> List[Card]:
-        """Get all credit cards of a specific type"""
-        with psycopg.connect(self.database_url) as conn:
-            with conn.cursor() as cur:
-                cur.execute("""
-                    SELECT * FROM credit_cards WHERE card_type = %s ORDER BY name
-                """, (card_type,))
-                
-                card_rows = cur.fetchall()
-                
-                return [
-                    Card(
-                        id=row[0],
-                        name=row[1],
-                        bank_id=row[2],
-                        card_type=row[3],
-                        sub_max_value=row[4],
-                        sub_description=row[5],
-                        annual_fee=row[6],
-                        foreign_transaction_fee=row[7],
-                        reward_structure=row[8],
-                        fee_credits=row[9],
-                        other_benefits=row[10],
-                        created_at=row[11]
-                    ) for row in card_rows
-                ]
-            
-    def get_cards_by_reward_structure(self, reward_structure: RewardStructure) -> List[Card]:
-        """Get all credit cards with a specific reward structure"""
-        with psycopg.connect(self.database_url) as conn:
-            with conn.cursor() as cur:
-                cur.execute("""
-                    SELECT * FROM credit_cards WHERE reward_structure = %s ORDER BY name
-                """, (reward_structure,))
-                
-                card_rows = cur.fetchall()
-                
-                return [
-                    Card(
-                        id=row[0],
-                        name=row[1],
-                        bank_id=row[2],
-                        card_type=row[3],
-                        sub_max_value=row[4],
-                        sub_description=row[5],
-                        annual_fee=row[6],
-                        foreign_transaction_fee=row[7],
-                        reward_structure=row[8],
-                        fee_credits=row[9],
-                        other_benefits=row[10],
-                        created_at=row[11]
-                    ) for row in card_rows
-                ]
-    def get_cards_with_no_annual_fee(self) -> List[Card]:
-        """Get all credit cards with no annual fee"""
-        with psycopg.connect(self.database_url) as conn:
-            with conn.cursor() as cur:
-                cur.execute("""
-                    SELECT * FROM credit_cards WHERE annual_fee = 0 ORDER BY name
-                """)
-                
-                card_rows = cur.fetchall()
-                
-                return [
-                    Card(
-                        id=row[0],
-                        name=row[1],
-                        bank_id=row[2],
-                        card_type=row[3],
-                        sub_max_value=row[4],
-                        sub_description=row[5],
-                        annual_fee=row[6],
-                        foreign_transaction_fee=row[7],
-                        reward_structure=row[8],
-                        fee_credits=row[9],
-                        other_benefits=row[10],
-                        created_at=row[11]
-                    ) for row in card_rows
-                ]
-    def get_cards_with_signup_bonus(self) -> List[Card]:
-        """Get all credit cards that have a signup bonus (sub_max_value > 0)"""
-        with psycopg.connect(self.database_url) as conn:
-            with conn.cursor() as cur:
-                cur.execute("""
-                    SELECT * FROM credit_cards
-                    WHERE sub_max_value IS NOT NULL AND sub_max_value > 0 
-                    ORDER BY sub_max_value DESC
-                """)
-                
-                card_rows = cur.fetchall()
-                
-                return [
-                    Card(
-                        id=row[0],
-                        name=row[1],
-                        bank_id=row[2],
-                        card_type=row[3],
-                        sub_max_value=row[4],
-                        sub_description=row[5],
-                        annual_fee=row[6],
-                        foreign_transaction_fee=row[7],
-                        reward_structure=row[8],
-                        fee_credits=row[9],
-                        other_benefits=row[10],
-                        created_at=row[11]
-                    ) for row in card_rows
-                ]
-            
-    def get_all_cards(self, limit: Optional[int] = None, offset: int = 0) -> List[Card]:
-        """Get all credit cards with optional pagination"""
-        with psycopg.connect(self.database_url) as conn:
-            with conn.cursor() as cur:
-                query = "SELECT * FROM credit_cards ORDER BY created_at DESC"
-                params = []
+                return deleted
 
-                if limit:
-                    query += " LIMIT %s OFFSET %s"
-                    params.extend([limit, offset])
-                elif offset > 0:
-                    query += " OFFSET %s"
-                    params.append(offset)
-                    
-                cur.execute(query, params)
-                card_rows = cur.fetchall()
-                
-                return [
-                    Card(
-                        id=row[0],
-                        name=row[1],
-                        bank_id=row[2],
-                        card_type=row[3],
-                        sub_max_value=row[4],
-                        sub_description=row[5],
-                        annual_fee=row[6],
-                        foreign_transaction_fee=row[7],
-                        reward_structure=row[8],
-                        fee_credits=row[9],
-                        other_benefits=row[10],
-                        created_at=row[11]
-                    ) for row in card_rows
-                ]
-            
-    def get_cards_by_fee_range(self, min_fee: int = 0, max_fee: Optional[int] = None) -> List[Card]:
-        """Get credit cards within a specific annual fee range"""
-        with psycopg.connect(self.database_url) as conn:
-            with conn.cursor() as cur:
-                if max_fee is not None:
-                    cur.execute("""
-                        SELECT * FROM credit_cards
-                        WHERE annual_fee >= %s AND annual_fee <= %s 
-                        ORDER BY annual_fee, name
-                    """, (min_fee, max_fee))
-                else:
-                    cur.execute("""
-                        SELECT * FROM credit_cards
-                        WHERE annual_fee >= %s 
-                        ORDER BY annual_fee, name
-                    """, (min_fee,))
-                
-                card_rows = cur.fetchall()
-                
-                return [
-                    Card(
-                        id=row[0],
-                        name=row[1],
-                        bank_id=row[2],
-                        card_type=row[3],
-                        sub_max_value=row[4],
-                        sub_description=row[5],
-                        annual_fee=row[6],
-                        foreign_transaction_fee=row[7],
-                        reward_structure=row[8],
-                        fee_credits=row[9],
-                        other_benefits=row[10],
-                        created_at=row[11]
-                    ) for row in card_rows
-                ]
+    def _get_card_categories_by_conn(self, cur, card_id: int) -> List[CardSpendingCategory]:
+        cur.execute(
+            """
+            SELECT id, category, rate, cap, quarterly_rotating
+            FROM card_spending_category
+            WHERE card_id = %s
+            ORDER BY category
+            """,
+            (card_id,),
+        )
+        rows = cur.fetchall()
+        out: List[CardSpendingCategory] = []
+        for r in rows:
+            out.append(
+                CardSpendingCategory(
+                    id=r[0],
+                    category=_enum_from_db(SpendingCategoryEnum, r[1]),
+                    rate=r[2],
+                    cap=r[3],
+                    quarterly_rotating=r[4],
+                )
+            )
+        return out
+
+    def _row_to_card(self, r) -> Card:
+        return Card(
+            id=r[0],
+            name=r[1],
+            bank_id=r[2],
+            card_type=_enum_from_db(CardType, r[3]),
+            annual_fee=r[4],
+            foreign_transaction_fee=r[5],
+            reward_structure=_enum_from_db(RewardStructure, r[6]),
+            created_at=r[7],
+            spending_categories=[],
+        )
+    
